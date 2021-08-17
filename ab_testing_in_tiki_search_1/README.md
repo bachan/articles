@@ -439,7 +439,7 @@ def mannwhitney_buckets(ctrs_0, weights_0, ctrs_1, weights_1, bucket_size=10):
     return mannwhitney(*bucketize(ctrs_0, weights_0, ctrs_1, weights_1, bucket_size))
 ```
 
-We will use the same ranges of `sigma2` and `beta` and draw the same animated series of graphs to see how bucketing performs comparing to the regular tests. Here's the changes for `sigma2`. Modifications to `plot_all` to support bucketed versions of tests are very simple, so we will not provide `plot_all_buckets` code here, but you can find it in [this repository](https://github.com/bachan/articles).
+We will use the same ranges of `sigma2` and `beta` and draw the same animated series of graphs to see how bucketing performs comparing to the regular tests. Here's the changes for `sigma2`. Modifications to `plot_all` to support bucketed versions of tests are very simple, so we will not provide `plot_all_buckets` code here, but you can find it in [this repository](https://github.com/bachan/articles/tree/master/ab_testing_in_tiki_search_1).
 
 ```python
 for sigma2 in sigma_list:
@@ -499,5 +499,5 @@ Apart from these, we’ve tried to cover as much as we can on the process of mak
 
 The idea of testing and most of the code was taken from [this webinar](https://youtu.be/ObzlKVCiBqI). It's in Russian language, but jupyter notebook with full code is available there.
 
-Full code for this article is also available in [this repository](https://github.com/bachan/articles).
+Full code for this article is also available in [this repository](https://github.com/bachan/articles/tree/master/ab_testing_in_tiki_search_1).
 
