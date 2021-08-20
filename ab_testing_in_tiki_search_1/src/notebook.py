@@ -11,6 +11,7 @@ from matplotlib.axes import Axes
 
 def generate(N=20000, experiments=2000, mu=5, sigma2=1.3, \
         success_rate=0.02, uplift=0.03, beta=100):
+    # generate {experiments} number of views distributions each containing {N} users
     views_a_1 = np.absolute(np.exp(stats.norm(mu, sigma2).rvs(experiments * N)) \
         .astype(np.int64).reshape(experiments, N) + 1)
     views_a_2 = np.absolute(np.exp(stats.norm(mu, sigma2).rvs(experiments * N)) \

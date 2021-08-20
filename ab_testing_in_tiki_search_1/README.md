@@ -1,12 +1,12 @@
 # A/B testing in Tiki Search
 
-In Tiki Search we constantly add new features into ranking formula to provide customers with better search quality. To make sure that a new feature actually gives better result we use A/B testing, which is a process when during some time we have both old and new formula ranking results for a subset of users. Then we calculate key metrics on each of those subsets separately and make a decision whether the new formula is actually doing better or not.
+In Tiki Search we constantly add new features into ranking formula to provide customers with better search quality. To make sure that a new feature actually gives better result we use A/B testing, which is a process when during some time we have both old and new formula running in parallel and ranking results for a different subset of users. Then we calculate key metrics on each of those subsets separately and make a decision whether the new formula is actually doing better or not.
 
-In this article I will give a detailed explanation on the process of making such decision - how to understand that the new ranking is "truly" better than the old one and how to estimate the probability of making a mistake in such decision.
+In this article we will give a detailed explanation on the process of making such decision - how to understand that the new ranking is "truly" better than the old one and how to estimate the probability of making a mistake in such decision.
 
-We will not cover the architecture of our whole A/B testing system here - how do we setup the experiments, how do we split our users between them, how do we track events in our system and so on. There’s a lot of information available on these topics. We will solely focus on just one thing - how to interpret the test results and make business decisions based on them.
+We will not cover the architecture of our whole A/B testing system here - how do we setup the experiments, how do we split our users between them, how do we track events in our system and so on. There's a lot of information available on these topics. We will solely focus on just one thing - how to interpret the test results and make business decisions based on them.
 
-With all that said, let’s get to the topic.
+With all that said, let's get to the topic.
 
 ## Naive Approach
 
@@ -14,15 +14,15 @@ Most of the metrics we use for estimating search quality in Tiki are rate metric
 
 For the purpose of this article we will define our "view" event as an impression of a single product made within the search results. Our "click" event will be defined as a click on one of the previously impressed results. And the CTR (for a given customer) will be defined as count of all their "click" events divided by count of all their "view" events.
 
-A naive approach to interpret A/B test results would be to simply compare the average CTR of old and new ranking formula directly and consider the bigger CTR as the "winner". The problem here, though, is that the resulting CTRs will most likely be different even if we didn’t change the ranking formula at all. Different customers have different click behaviour and with such "random" process we will never end up having the same average CTR for the same ranking formula.
+A naive approach to interpret A/B test results would be to simply compare the average CTR of old and new ranking formula directly and consider the bigger CTR as the "winner". The problem here, though, is that the resulting CTRs will most likely be different even if we didn't change the ranking formula at all. Different customers have different click behaviour and with such "random" process we will never end up having the same average CTR for the same ranking formula.
 
 Historically we had seen differences in average CTR going up to 2-3% even if the ranking formula behind both test variants was the same. This presumably small difference can actually make a lot of extra money for the company, if it is "truly" there, so we want our testing process to be sensitive to the true changes even smaller than that and throw away all the cases where the improvement was not "truly" there. This means that a direct CTR comparison approach cannot be used.
 
 ## Statistical Tests
 
-There’s a number of known ways to solve this comparison problem, they are called "statistical tests".
+There's a number of known ways to solve this comparison problem, they are called "statistical tests".
 
-Let’s define a hypotesis that the CTR distribution of the old ranking model is the same as the CTR distribution of the new ranking model and call it a null hypotesis (H0). Let’s also define an alternative hypotesis (H1) that they are different. A statistical test can perform a calculation over the two distributions and as a result - provide a p-value (probability value), which estimates how likely it is that you would see the difference described by this test statistic if the H0 was true (meaning the actual distributions were the same). It might be hard to understand in theory, but we will show more on this later with examples.
+Let's define a hypotesis that the CTR distribution of the old ranking model is the same as the CTR distribution of the new ranking model and call it a null hypotesis (H0). Let's also define an alternative hypotesis (H1) that they are different. A statistical test can perform a calculation over the two distributions and as a result - provide a p-value (probability value), which estimates how likely it is that you would see the difference described by this test statistic if the H0 was true (meaning the actual distributions were the same). It might be hard to understand in theory, but we will show more on this later with examples.
 
 The most commonly used statistical tests in the industry are:
 - [T-Test](https://en.wikipedia.org/wiki/Student%27s_t-test)
@@ -37,15 +37,15 @@ In the rest of the article we will try to answer the question how to select the 
 
 ## CTR Distribution
 
-Here’s how a typical CTR distribution in Tiki Search looks like:
+Here's how a typical CTR distribution in Tiki Search looks like:
 
 ![](files/01_ctr_distribution.png)
 
 This is a density graph that has specific CTR values on x axis and the number of users that had that specific CTR as their average by y axis. The peaks around 0.25, 0.20 etc are the users who just made a few impressions before clicking what they wanted to find and never came back during the test period - the low number of "views" is the reason why their CTRs seem to be so high.
 
-Note that we splitted the CTRs by users in our distribution, because most of statistical tests work under an assumption that the observations should be independent from each other (and we assume that different Tiki users act independently from each other). We could’ve used search sessions instead of users, but then if the same user did a search twice, the second observation might be dependent on the first one (for example, you search "vegetables", because you haven’t found anything for "cucumber") and thus it might be harder to use statistical tests.
+Note that we splitted the CTRs by users in our distribution, because most of statistical tests work under an assumption that the observations should be independent from each other (and we assume that different Tiki users act independently from each other). We could've used search sessions instead of users, but then if the same user did a search twice, the second observation might be dependent on the first one (for example, you search "vegetables", because you haven't found anything for "cucumber") and thus it might be harder to use statistical tests.
 
-Let’s start with a simple idea - let’s find a way to model the CTR distribution above and generate N distributions like that. We will call it our A1 group. Then let’s do another N distributions using the same parameters and call it A2 group. And finally let’s do another N distributions, but change our parameters with a constant uplift coefficient, so that the average of the distributions in this 3rd group would be slightly higher than in A1 and A2. This will be our group B.
+Let's start with a simple idea - let's find a way to model the CTR distribution above and generate N distributions like that. We will call it our A1 group. Then let's do another N distributions using the same parameters and call it A2 group. And finally let's do another N distributions, but change our parameters with a constant uplift coefficient, so that the average of the distributions in this 3rd group would be slightly higher than in A1 and A2. This will be our group B.
 
 We will use groups A1 and A2 to check that False-Positive Rate (FPR) of our statistical test is below the required threshold. And we will use A1 and B to check that the sensitivity of our test is high enough given the accepted error probability.
 
@@ -53,11 +53,11 @@ An FPR is defined as the probability to decline H0 while it is actually correct 
 
 ## Modelling the CTR Distribution
 
-It is hard to model the CTR distribution directly, because of those peaks caused by users with low "view" counts. Instead of trying to do that, let’s model it indirectly. Let’s start from the "views". Here’s how a typical views distribution looks like in Tiki Search:
+It is hard to model the CTR distribution directly, because of those peaks caused by users with low "view" counts. Instead of trying to do that, let's model it indirectly. Let's start from the "views". Here's how a typical views distribution looks like in Tiki Search:
 
 ![](files/02_views_distribution_products.png)
 
-It looks much "nicer" than the CTR one, so we can model it using log-normal distribution. Here’s the python code to do that:
+It looks much "nicer" than the CTR one, so we can model it using log-normal distribution. Here's the python code to do that:
 
 ```python
 import matplotlib.pyplot as plt
@@ -85,7 +85,7 @@ Great! It looks very similar to our real distribution! :)
 
 Now we need to somehow generate our clicks distribution as well. The simplest assumption would be that each user has the same "ground truth" probability to click on the product in search results given that those results are exactly the same. Then we can use that "ground truth" probability to generate our simulated click events. This assumption is far from reality, though. Different users have different click behaviour - some would like to check more results before clicking on one, others would just go for it if the first one looks relevant. Of course, this depends on the query context, but it ALSO depends on the user context.
 
-We can try to estimate our "ground truth" CTRs distribution by using our real historical CTRs, but only taking into account users who made enough "views" before, so that their real CTRs are more likely to be close to their "ground truth" CTRs in search. Here’s how such distribution looks in Tiki Search:
+We can try to estimate our "ground truth" CTRs distribution by using our real historical CTRs, but only taking into account users who made enough "views" before, so that their real CTRs are more likely to be close to their "ground truth" CTRs in search. Here's how such distribution looks in Tiki Search:
 
 ![](files/04_ctr_distribution_products.png)
 
@@ -93,7 +93,7 @@ Good way to simulate it is to use beta distribution. It is defined on an interva
 
 ![](files/05_beta_mean.png)
 
-Let’s write the code to do it:
+Let's write the code to do it:
 
 ```python
 # expectation of our ground truth CTR, we will use it later to simulate B group
@@ -116,13 +116,13 @@ plt.show()
 
 Note that we have selected the parameters for both simulations above so that they look close to our real distribution graphs, but we will change them later in the article to show which statistical tests work better under which conditions.
 
-Now that we have both views and ground truth ctrs, let’s finally generate our clicks distribution. We can simulate clicks as `views` number of experiments with `success_rate` probability of success using binomial distribution defined like this:
+Now that we have both views and ground truth ctrs, let's finally generate our clicks distribution. We can simulate clicks as `views` number of experiments with `success_rate` probability of success using binomial distribution defined like this:
 
 ```python
 clicks = scipy.stats.binom(n=views, p=success_rate).rvs()
 ```
 
-Let’s finally write the function to generate our A/A and A/B tests data. For groups A1 and A2 we will just use the same settings for both `views` and `success_rate` distributions. For group B we will change the parameters so that the expectation of `success_rate` has a certain given `uplift`, which represents that users in that distribution tend to click more than in groups A1 or A2. This is the change we want our statistical tests to catch.
+Let's finally write the function to generate our A/A and A/B tests data. For groups A1 and A2 we will just use the same settings for both `views` and `success_rate` distributions. For group B we will change the parameters so that the expectation of `success_rate` has a certain given `uplift`, which represents that users in that distribution tend to click more than in groups A1 or A2. This is the change we want our statistical tests to catch.
 
 ```python
 import os
@@ -136,6 +136,7 @@ from matplotlib.axes import Axes
 # generate A1, A2 and B groups with given settings
 def generate(N=20000, experiments=2000, mu=5, sigma2=1.3, \
         success_rate=0.02, uplift=0.03, beta=100):
+    # generate {experiments} number of views distributions each containing {N} users
     views_a_1 = np.absolute(np.exp(stats.norm(mu, sigma2).rvs(experiments * N)) \
         .astype(np.int64).reshape(experiments, N) + 1)
     views_a_2 = np.absolute(np.exp(stats.norm(mu, sigma2).rvs(experiments * N)) \
@@ -195,7 +196,7 @@ def plot_cdf(data: np.ndarray, label: str, ax: Axes, color: str = colors[0], lin
         label=label, linewidth=linewidth)
 ```
 
-Let’s take A1/A2 test comparison and see how our p-values look like in both T-Test and Mann-Whitney U-Test first:
+Let's take A1/A2 test comparison and see how our p-values look like in both T-Test and Mann-Whitney U-Test first:
 
 ```python
 views_a_1, views_a_2, views_b, \
@@ -225,7 +226,7 @@ plot_pvalues(p_values_mannwhitney, 'p-values in A/A test (Mann-Whitney)')
 
 ![](files/07_pvalues_in_aa_test.png)
 
-And here’s how CDF (cummulative distribution function) graphs of p-value distribution look:
+And here's how CDF (cummulative distribution function) graphs of p-value distribution look:
 
 ```python
 def plot_pvalues_cdf(p_values, title):
@@ -248,7 +249,7 @@ plot_pvalues_cdf(p_values_mannwhitney, 'p-values CDF in A/A test (Mann-Whitney)'
 
 We can see that in both tests the p-value is equally likely to be anywhere between 0 and 1, which means that if our acceptable FPR threshold is 5%, then this test will only mistakenly decline H0 in around 5% of all cases. The rest of the cases will show p-value > 5% and thus we will accept H0, because the p-value is bigger than our threshold.
 
-Let’s see on p-values in A1/B test now:
+Let's see on p-values in A1/B test now:
 
 ```python
 p_values_t_test = t_test(ctrs_a_1, ctrs_b)
@@ -269,7 +270,7 @@ And CDF graphs as well:
 
 We can see that both tests did have relatively good sensitivity under acceptable FPR threshold, but Mann-Whitney U-Test had shown better sensitivity than T-Test with the settings above.
 
-Let’s now try to tweak `views` and `success_rate` distributions to simulate different user behaviour and see how it affects the sensitivity and FPR of both tests. We will use `sigma2` parameter to tweak `views` and `beta` to tweak `success_rate`. For the purpose of presentation we will plot all important information in one summary screen and then merge all of them into an animated GIF here.
+Let's now try to tweak `views` and `success_rate` distributions to simulate different user behaviour and see how it affects the sensitivity and FPR of both tests. We will use `sigma2` parameter to tweak `views` and `beta` to tweak `success_rate`. For the purpose of presentation we will plot all important information in one summary screen and then merge all of them into an animated GIF here.
 
 ```python
 def plot_summary(data, ground_truth_ctr, views, sigma2, beta):
@@ -410,15 +411,15 @@ for beta in beta_list:
 
 ![](files/12_all_beta_variations.gif)
 
-The U-Test shows better sensitivity in all the cases above, the difference is especially high when `views` distribution is heavily shifted to the left. Another interesting thing to notice is that if ground truth CTR distribution is shifted to the left, both tests' performance is relatively low (but U-Test still outperforms T-Test).
+The Mann-Whitney U-Test shows better sensitivity in all the cases above, the difference is especially high when `views` distribution is heavily shifted to the left. Another interesting thing to notice is that if ground truth CTR distribution is shifted to the left, both tests' performance is relatively low (but Mann-Whitney U-Test still outperforms T-Test).
 
-Let’s discuss how can we improve it further!
+Let's discuss how can we improve it further!
 
 ## Bucketing
 
-A commonly used approach to improve statistical test performance is called "bucketing". Instead taking each user separately and comparing CTR distributions between them we could group users into buckets and compare the CTR distributions between those buckets. The only requirement here is that each user should only belong to one bucket. This can be achieved by using hashing with salt technique.
+A commonly used approach to improve statistical test performance is called "bucketing". Instead taking each user separately and comparing CTR distributions between them we could group users into buckets and compare the CTR distributions between those buckets. The only requirement here is that each user should only belong to one bucket. To achieve this we can hash each user id with salt and divmod the hash by the number of buckets. In our simulated case we will just split the data directly without hashing as it is already a random simulation anyway.
 
-Let’s write a function to bucketize a given distribution and also wrappers to apply both statistical tests to a bucketed distribution:
+Let's write a function to bucketize a given distribution and also wrappers to apply both statistical tests to a bucketed distribution:
 
 ```python
 def bucketize(ctrs_0, weights_0, ctrs_1, weights_1, bucket_size=10):
@@ -457,7 +458,13 @@ for beta in beta_list:
 
 ![](files/14_all_beta_variations_bucketing.gif)
 
-While in most cases bucketing doesn't outperform the U-Test and works even worse than the T-Test sometimes, it can be seen that under more "regular" ground truth CTR distributions when `beta` is high, it shows the best performance among all tests. Let's try to simulate the distributions where the improvement with bucketing would be more visible.
+While in most cases bucketing doesn't outperform the Mann-Whitney U-Test and works even worse than the T-Test sometimes, it can be seen that under more "regular" ground truth CTR distributions when `beta` is high, it shows the best performance among all tests. Let's try to simulate the distributions where the improvement with bucketing would be more visible.
+
+```python
+plot_all_buckets(sigma2=4.5, beta=1000)
+plot_all_buckets(sigma2=4.5, beta=1000, mu=1, N=50000)
+plot_all_buckets(sigma2=4.5, beta=1000, mu=1)
+```
 
 ![](files/15_all_bucketing.gif)
 
@@ -467,33 +474,39 @@ We will leave the question of why bucketing works behind this article. We will a
 
 All the tests above were made on simulated distributions, but we can actually generate any number of A/A tests from our real data, we just need to make sure that the way we split users is independent of any ongoing test, so that the ranking behind them is exactly the same, or even just take the data from a subset of users that was not under any test at the moment.
 
-Here’s p-value graph for A/A test on 2000 random distributions crafted from our real data:
+Here's p-value graph for A/A test on 2000 random distributions crafted from our real data:
 
 ![](files/16_pvalues_in_real_aa_test.png)
 
-And here’s the CDF graph for it:
+And here's the CDF graph for it:
 
 ![](files/17_pvalues_cdf_in_real_aa_test.png)
 
-Unfortunately, we cannot do the same for A/B tests, because unlike A/A test we could never know which version was actually better (otherwise, we wouldn’t need an A/B test in the first place), but we can still use our real data A/A test to make sure that FPR is within acceptable limits and we can use our simulated A/B tests above to check which statistical test gives the best possible sensitivity for our distribution.
+Now for real data A/B tests we cannot calculate sensitivity directly, because we don't know the ground truth difference (if we knew it, we wouldn't need an A/B test in the first place). But the simulations above helped us to understand the sensitivity of each test on many differently shaped distributions, so we can just use the test that has the best sensitivity on our closest simulation. And we can also double check ourselves by seeing if real data A/A test still gives an acceptable FPR.
 
 ## Conclusion
 
-The main point of this article was not to give exact answer on what works best and not to give a "silver bullet" solution for all possible cases. What I've tried to do here is to show the technique that everybody can apply to their own distributions to figure out which test appraoch will have the best sensitivity under an acceptable false positive rate for their specific domain.
+The main point of this article was not to give exact answer on what works best and not to give a "silver bullet" solution for all possible cases. What we've tried to do here is to show the technique that everybody can apply to their own distributions to figure out which test appraoch will have the best sensitivity under an acceptable false positive rate for their specific domain.
 
-If simulating the tests as we did above is impossible, then at least you should always make sure to check how your statistical tests work with your real data A/A test and make sure that false positive rate is within the limit. Cases when users were splitted incorrectly between the test variants are not uncommon in the real world A/B testing and doing such checks is one of the ways to catch this thing as well.
+Here's the technique again:
+- draw your real views distribution and try to estimate how your ground truth CTRs could look like;
+- find the right simulations for your real distributions;
+- generate as many A/A and A/B tests with those simulations;
+- calculate sensitivity and FPR for each statistical test using those simulations.
 
-## What’s next?
+If simulating the tests is impossible for some reason, then at least you should always make sure to check how your statistical test works with your real data A/A test and make sure that false positive rate is within the limit. Cases when users were splitted incorrectly between the test variants are not uncommon in the real world A/B testing and doing such checks is one of the ways to catch this thing as well.
 
-There’s a number of things that we want to leave behind this article.
+## What's next?
+
+There's a number of things that we want to leave behind this article.
 
 First of all, how long should we run the test to guarantee that we will notice the change of X% in the distribution with FPR being within the acceptable limit. The approach normally used here is called Minimum Detectable Effect (MDE), we might provide more details on it in the next article. There could also be some product related limitations here, for example, customer behaviour in Monday is different from Saturday and this can put some additional requirements on the length of the test.
 
-Second thing that wasn’t covered is how to work with non-rate metrics. For example, we want to optimize an average paycheck from search or increase the share of users with purchases of at least 100k VND of goods. We hope to put some light onto it in the next article.
+Second thing that wasn't covered is how to work with non-rate metrics. For example, we want to optimize an average paycheck from search or increase the share of users with purchases of at least 100k VND of goods. We hope to put some light onto it in the next article.
 
-Third, there’s another popular technique to perform a statistical test called bootstrapping. It is a little more complex (both computationally and in implementation) than the techinques described above, but it might be the best option for some distributions. It is also available in `scipy.stats` package, so you can do your own research.
+Third, there's another popular technique to perform a statistical test called bootstrapping. It is a little more complex (both computationally and in implementation) than the techinques described above, but it might be the best option for some distributions. It is also available in `scipy.stats` package, so you can do your own research.
 
-Apart from these, we’ve tried to cover as much as we can on the process of making decisions about A/B test results that we use in Tiki Search. Hopefully, it was helpful and easy to understand.
+Apart from these, we've tried to cover as much as we can on the process of making decisions about A/B test results that we use in Tiki Search. Hopefully, it was helpful and easy to understand.
 
 ## References
 
