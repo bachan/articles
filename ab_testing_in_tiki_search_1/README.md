@@ -1,20 +1,20 @@
 # A/B testing in Tiki Search
 
-In Tiki Search we constantly add new features into ranking formula to provide customers with better search quality. To make sure that a new feature actually gives better result we use A/B testing, which is a process when during some time we have both old and new formula running in parallel and ranking results for a different subset of users. Then we calculate key metrics on each of those subsets separately and make a decision whether the new formula is actually doing better or not.
+In Tiki Search we constantly add new features into the ranking formula to provide customers with better search quality. To make sure that a new feature actually gives better results we use A/B testing, which is a process when during some time we have both old and new formula running in parallel and ranking results for a different subset of users. Then we calculate key metrics on each of those subsets separately and make a decision whether the new formula is actually doing better or not.
 
-In this article we will give a detailed explanation on the process of making such decision - how to understand that the new ranking is "truly" better than the old one and how to estimate the probability of making a mistake in such decision.
+In this article we will give a detailed explanation on the process of making this decision - how to understand that the new ranking is "truly" better than the old one and how to estimate the probability of making a mistake in this decision.
 
-We will not cover the architecture of our whole A/B testing system here - how do we setup the experiments, how do we split our users between them, how do we track events in our system and so on. There's a lot of information available on these topics. We will solely focus on just one thing - how to interpret the test results and make business decisions based on them.
+We will not cover the architecture of our whole A/B testing system here - how do we set up the experiments, how do we split our users between them, how do we track events in our system and so on. There's a lot of information available on these topics. We will solely focus on just one thing - how to interpret the test results and make business decisions based on them.
 
 With all that said, let's get to the topic.
 
 ## Naive Approach
 
-Most of the metrics we use for estimating search quality in Tiki are rate metrics, that can be defined by dividing one value to another value. The most common example of such metric is Click-Through-Rate (CTR), which is defined as the number of clicks divided by the number of impressions made in a certain context. Other rate metrics could be "purchase rate", "non-clicked queries rate" etc. In the rest of the article we will focus on CTR, but everything below can be applied to any other rate metric as well.
+Most of the metrics we use for estimating search quality in Tiki are rate metrics that can be defined by dividing one value to another value. The most common example of such a metric is Click-Through-Rate (CTR), which is defined as the number of clicks divided by the number of impressions made in a certain context. Other rate metrics could be "purchase rate", "non-clicked queries rate" etc. In the rest of the article we will focus on CTR, but everything below can be applied to any other rate metric as well.
 
-For the purpose of this article we will define our "view" event as an impression of a single product made within the search results. Our "click" event will be defined as a click on one of the previously impressed results. And the CTR (for a given customer) will be defined as count of all their "click" events divided by count of all their "view" events.
+For the purpose of this article we will define our "view" event as an impression of a single product made within the search results. Our "click" event will be defined as a click on one of the previously impressed results. And the CTR (for a given customer) will be defined as the count of all their "click" events divided by count of all their "view" events.
 
-A naive approach to interpret A/B test results would be to simply compare the average CTR of old and new ranking formula directly and consider the bigger CTR as the "winner". The problem here, though, is that the resulting CTRs will most likely be different even if we didn't change the ranking formula at all. Different customers have different click behaviour and with such "random" process we will never end up having the same average CTR for the same ranking formula.
+A naive approach to interpret A/B test results would be to simply compare the average CTR of old and new ranking formula directly and consider the bigger CTR as the "winner". The problem here, though, is that the resulting CTRs will most likely be different even if we didn't change the ranking formula at all. Different customers have different click behaviour and with such a "random" process we will never end up having the same average CTR for the same ranking formula.
 
 Historically we had seen differences in average CTR going up to 2-3% even if the ranking formula behind both test variants was the same. This presumably small difference can actually make a lot of extra money for the company, if it is "truly" there, so we want our testing process to be sensitive to the true changes even smaller than that and throw away all the cases where the improvement was not "truly" there. This means that a direct CTR comparison approach cannot be used.
 
@@ -22,7 +22,7 @@ Historically we had seen differences in average CTR going up to 2-3% even if the
 
 There's a number of known ways to solve this comparison problem, they are called "statistical tests".
 
-Let's define a hypotesis that the CTR distribution of the old ranking model is the same as the CTR distribution of the new ranking model and call it a null hypotesis (H0). Let's also define an alternative hypotesis (H1) that they are different. A statistical test can perform a calculation over the two distributions and as a result - provide a p-value (probability value), which estimates how likely it is that you would see the difference described by this test statistic if the H0 was true (meaning the actual distributions were the same). It might be hard to understand in theory, but we will show more on this later with examples.
+Let's define a hypothesis that the CTR distribution of the old ranking model is the same as the CTR distribution of the new ranking model and call it a null hypothesis (H0). Let's also define an alternative hypothesis (H1) that they are different. A statistical test can perform a calculation over the two distributions and as a result - provide a p-value (probability value), which estimates how likely it is that you would see the difference described by this test statistic if the H0 was true (meaning the actual distributions were the same). It might be hard to understand in theory, but we will show more on this later with examples.
 
 The most commonly used statistical tests in the industry are:
 - [T-Test](https://en.wikipedia.org/wiki/Student%27s_t-test)
@@ -33,7 +33,7 @@ T-Test is a "parametric test", it requires the data to be normally distributed t
 
 Mann-Whitney U-Test is a "non-parametric test" and can be applied to a much broader set of distributions.
 
-In the rest of the article we will try to answer the question how to select the right statistical test for your specific problem and how to interpret its results correctly.
+In the rest of the article we will try to answer the question of how to select the right statistical test for your specific problem and how to interpret its results correctly.
 
 ## CTR Distribution
 
@@ -166,7 +166,7 @@ def generate(N=20000, experiments=2000, mu=5, sigma2=1.3, \
         clicks_a_1, clicks_a_2, clicks_b
 ```
 
-Now for the actual tests we will just use their implementation available in `scipy.stats` package.
+Now for the actual tests we will just use their implementation available in the `scipy.stats` package.
 
 ```python
 # T-Test implementation
