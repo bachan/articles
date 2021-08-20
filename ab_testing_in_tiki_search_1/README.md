@@ -461,9 +461,9 @@ for beta in beta_list:
 While in most cases bucketing doesn't outperform the Mann-Whitney U-Test and works even worse than the T-Test sometimes, it can be seen that under more "regular" ground truth CTR distributions when `beta` is high, it shows the best performance among all tests. Let's try to simulate the distributions where the improvement with bucketing would be more visible.
 
 ```python
-plot_all_buckets(sigma2=4.5, beta=1000)
-plot_all_buckets(sigma2=4.5, beta=1000, mu=1, N=50000)
-plot_all_buckets(sigma2=4.5, beta=1000, mu=1)
+plot_all_buckets(N=20000, experiments=2000, mu=5, sigma2=4.5, success_rate=0.02, uplift=0.03, beta=1000, bucket_size=10)
+plot_all_buckets(N=50000, experiments=2000, mu=1, sigma2=4.5, success_rate=0.02, uplift=0.03, beta=1000, bucket_size=10)
+plot_all_buckets(N=20000, experiments=2000, mu=1, sigma2=4.5, success_rate=0.02, uplift=0.03, beta=1000, bucket_size=10)
 ```
 
 ![](files/15_all_bucketing.gif)
