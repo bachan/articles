@@ -151,8 +151,6 @@ Few interesting facts about this model:
 
 - On a cleaned up test set most of the wrong answer cases are the cases when product color is somewhat controversal (i.e. it's a mix between Cam and Kem, for which it's hard to tell whether it's more Cam or more Kem).
 
-<TODO 3 examples of images with weird color where model does not guess sellers choice>
-
 ![](files/10_merge_color.png)
 
 - We originally had "Xanh dương" and "Xanh da trời" separated in our training set, but after a few tries we noticed that every model would completely mess them up in the confusion matrix, which means that sellers themselves didn't have an agreed vision on which one is which. To our understanding, "Xanh dương" is on a darker side while "Xanh da trời" is on a lighter side, but many sellers probably saw it as opposite, so in the end we decided to just join those 2 labels into one.
