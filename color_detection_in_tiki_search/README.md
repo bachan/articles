@@ -15,8 +15,14 @@ Here's what we have at our disposal:
 <https://tiki.vn/op-lung-dien-thoai-samsung-galaxy-m31-silicon-deo-0156-brown05-hang-chinh-hang-p82969564.html?spid=94275326>
 
 3. Freetext color tags provided by sellers can range from something generic and easy to understand like "Xanh lá" to something that is much harder to process automatically (TODO add 3 examples).
-
+<https://tiki.vn/den-ban-led-chong-can-6w-rang-dong-p93964491.html?spid=93964516>
+<https://tiki.vn/anh-that-co-san-ao-khoac-ni-hoodie-unisex-bape-ca-map-p117282475.html?spid=117282526>
+<https://tiki.vn/op-vien-deo-sticker-cap-doi-meo-chibi-phong-cach-danh-cho-iphone-6s-6-plus-6s-6s-plus-se-7-7-plus-8-8-plus-pc158-p119845233.html?spid=119845457>
 4. Customers also may address colors in very different ways in their queries (TODO add 1 good and 3 bad examples).
+“bàn chải pin oral-b pro-health clinical - đầu gum care, màu xanh - dùng pin aa”
+“lg tone free fp8 - màu đen - hàng chính hãng”
+“slip on da nam - giày lười da nam leyo - da pu màu (đen) full và (xám) - mã sp a1182”
+“tẩy da chết rosette peeling gel nhật nội địa 150g (màu xanh, màu đỏ)”
 
 Our task here is to come up with an approach that will help us to match product color data from our sellers with what our customers use to address those colors in their queries.
 
@@ -43,16 +49,20 @@ The most naive approach to detect product color by its image is to define a set 
 This approach works relatively well with images like these with uniform color and large area:
 
 ![](files/01_easy_detect.png)
+<https://tiki.vn/op-lung-danh-cho-iphone-13-pro-max-chinh-hang-nillkin-dang-san-p123150986.html?spid=125925967>
+<https://tiki.vn/do-choi-squishy-dong-vat-giam-cang-thang-p13718536.html?spid=13718559>
+<https://tiki.vn/do-choi-squishy-bang-cao-su-giam-cang-thang-cho-tre-em-p111306468.html?spid=111306474>
 
 But it fails to do the job on images with more complex background:
 
 ![](files/01_pixel_scan_not_work.png)
+<https://tiki.vn/6r-day-chuyen-nam-nu-titan-vong-co-titan-ngoi-sao-6-canh-cuc-chat-p107543379.html?spid=107543393>
+<https://tiki.vn/mat-kinh-y-te-di-duong-chong-bui-vuong-p48890958.html?spid=51620597>
+<https://tiki.vn/bo-noi-duc-6-mon-12-chi-tiet-dung-cho-moi-loai-bep-dien-bep-tu-bep-ga-tien-dung-p109573169.html?spid=142116996>
 
 To improve that we've tried to use a well-known GrabCut algorithm that helps to efficiently separate the background and the foreground pixels on any given image. 
 
-![](files/02_grabcut_work_1.png)
-![](files/03_grabcut_work_2.png)
-![](files/04_grabcut_work_3.png)
+<TODO add grabcut result on hard cases detect before>
 
 More details on the algorithms can be found [here](https://docs.opencv.org/3.4/d8/d83/tutorial_py_grabcut.html).
 
@@ -92,11 +102,17 @@ std::vector< cv::Mat > preprocess_image(const cv::Mat &image, size_t width, size
 
 Using GrabCut yielded surprisingly good results in terms of throwing the background out of scope, but the way we were selecting the main color was still too simple to work correctly with the cases like these:
 
+
+
 ![](files/05_grabcut_not_work_1.png)
 ![](files/06_grabcut_not_work_2.png)
 ![](files/07_grabcut_not_work_3.png)
 ![](files/08_grabcut_not_work_4.png)
 ![](files/09_grabcut_not_work_5.png)
+<https://tiki.vn/chan-vay-ngan-phoi-tui-chu-a-nhieu-size-2-mau-den-trang-cho-nu-thoi-trang-p114773664.html?spid=114773696>
+<https://tiki.vn/vong-tay-da-kyanite-thien-nhien-p14328988.html?spid=14328990>
+<https://tiki.vn/day-chuyen-bac-s925-da-aqua-cho-nu-bao-ngoc-jewelry-p48223376.html?spid=48223377>
+<https://tiki.vn/op-lung-danh-cho-iphone-dino-cute-nham-vien-noi-5-5s-6-6plus-6s-6splus-7-7plus-8-8plus-x-xs-11-12-pro-max-plus-promax-p108513150.html?spid=108513802>
 
 
 
@@ -163,12 +179,41 @@ It is possible to improve our 92% accuracy result even further using bigger imag
 
 ## Product Colors: Merging Images Together (Not Easy)
 
-tell about collecting all detected images into final product color here (and all related problems)
+Each image has a list of score like this:
+image: product/cc/d0/83/8b799f49038f16b55ddaac75c5725c2b.jpg
+[(Hồng, 0.500357985496521), (Cam, 0.2690041959285736), (Kem, 0.19863878190517426)]
+In this section, we use the image color to get a good judgment of product color. In tiki, there are two types of master product, type master_child has variants which are type seller_simple and type master_simple doesn’t have variants. Products of each type have a thumbnail and some other images.
+Because the thumbnail usually contains the main color of products, we find the color with the highest score among all product images with a 3 times thumbnail score and consider that is the product color. 
+But there are some special cases:
+- Sellers set thumbnails of different color variants with the same thumbnail. This case we cannot detect the product color by its image, let trust seller.
+<https://tiki.vn/ao-thun-tron-cao-cap-nhieu-mau-p17886234.html?spid=92559957>
 
 ## Queries: ...
 
-tell how we detect color related queries
+To detect the color that the seller wants to search, the old way is to check if query contains a pattern like “màu ” + $color where $color is in list of colors we defined before, or the query contain the $color word and if the new query create by add “màu” before $color have an acceptable quantity. The problem is that way is very depend on the history data and it cannot detect such an easy query like “áo nam xanh”. 
 
+So we try another approach by combining Facebook fasttext with a simple DNN architecture. We have tried to trained a fasttext model base on our data, but the pretrained model of Facebook is better. So here is the workflow look like:
+- Collect query data with 2 labels meaning it contains a color word or not. We use old method to collect the data. After that, we use a trick to have more data, normally if a query “áo nam màu xanh” then “áo nam xanh” also a query with color.
+- Using fasttext pretrained model to embedding the query into a vector.
+- Then feed that embedded data into DNN model.
+Here is the DNN architecture:
+```
+def build_model_DNN(shape, nClasses, dropout=0.5, nLayers=8):
+    model = Sequential()
+    node = 128  # number of nodes
+    model.add(layers.Dense(node, input_dim=shape, activation="relu", name="input"))
+    model.add(layers.BatchNormalization())
+    model.add(layers.Dropout(dropout))
+    for i in range(0, nLayers):
+        model.add(layers.Dense(node, input_dim=node, activation="relu"))
+        model.add(layers.BatchNormalization())
+        model.add(layers.Dropout(dropout))
+    model.add(layers.Dense(nClasses, activation="softmax", name="output"))
+    model.compile(
+        loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+    )
+    return model
+```
 ## Conclusion
 
 ...
