@@ -486,7 +486,7 @@ Now for real data A/B tests we cannot calculate sensitivity directly, because we
 
 ## Conclusion
 
-The main point of this article was not to give exact answer on what works best and not to give a "silver bullet" solution for all possible cases. What we've tried to do here is to show the technique that everybody can apply to their own distributions to figure out which test appraoch will have the best sensitivity under an acceptable false positive rate for their specific domain.
+The main point of this article was not to give exact answer on what works best and not to give a "silver bullet" solution for all possible cases. What we've tried to do here is to show the technique that everybody can apply to their own distributions to figure out which test approach will have the best sensitivity under an acceptable false positive rate for their specific domain.
 
 Here's the technique again:
 - draw your real views distribution and try to estimate how your ground truth CTRs could look like;
